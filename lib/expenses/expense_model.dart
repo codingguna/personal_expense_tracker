@@ -1,6 +1,10 @@
+//lib/expenses/expense_model.dart
 import 'package:json_annotation/json_annotation.dart';
 
 part 'expense_model.g.dart';
+//generate this part by running the command:
+//`flutter pub run build_runner build --delete-conflicting-outputs`
+
 
 @JsonSerializable()
 class Expense {

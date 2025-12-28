@@ -1,3 +1,4 @@
+//lib/shared/validators.dart
 String? requiredValidator(String? value) {
   if (value == null || value.isEmpty) {
     return 'This field is required';

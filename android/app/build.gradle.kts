@@ -6,9 +6,9 @@ plugins {
 }
 
 android {
-    namespace = "com.example.personal_expense_tracker"
-    compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    namespace = "com.codingguna.personal_expense_tracker"
+    compileSdk = 36
+    ndkVersion = "29.0.13113456"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

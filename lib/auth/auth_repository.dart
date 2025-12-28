@@ -1,3 +1,4 @@
+// lib/auth/auth_repository.dart
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AuthRepository {

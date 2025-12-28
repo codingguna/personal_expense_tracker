@@ -1,3 +1,4 @@
+//lib/shared/constant.dart
 const List<String> expenseCategories = [
   'Food',
   'Travel',

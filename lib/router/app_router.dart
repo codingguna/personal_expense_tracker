@@ -1,3 +1,4 @@
+// lib/router/app_router.dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -8,6 +9,9 @@ import '../ui/edit_expense_page.dart';
 import '../ui/home_page.dart';
 import '../ui/login_page.dart';
 import '../ui/signup_page.dart';
+import '../ui/verify_email_page.dart';
+import '../ui/statistics_page.dart';
+import '../ui/wallet_page.dart';
 
 final authProvider = StateNotifierProvider<AuthNotifier, bool>((ref) {
   return AuthNotifier();
@@ -48,6 +52,22 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/add',
         builder: (_, __) => const AddExpensePage(),
+      ),
+      GoRoute(
+        path: '/verify-email',
+        builder: (_, __) => VerifyEmailPage(),
+      ),
+      GoRoute(
+        path: '/statistics',
+        builder: (_, __) => StatisticsPage(),
+      ),
+      GoRoute(
+        path: '/wallet',
+        builder: (_, __) => const WalletPage(),
+      ),
+      GoRoute(
+        path:'/profile',
+        builder: (_, __) => const WalletPage(),
       ),
       GoRoute(
         path: '/edit',

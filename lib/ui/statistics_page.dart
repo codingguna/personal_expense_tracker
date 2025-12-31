@@ -62,33 +62,35 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage> {
         children: [
           const SizedBox(height: 12),
 
-          /// PERIOD
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: StatsPeriod.values.map((p) {
-                final selected = p == period;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: ChoiceChip(
-                    label: Text(p.name.toUpperCase()),
-                    selected: selected,
-                    selectedColor: const Color(0xFF2F8F83),
-                    labelStyle: TextStyle(
-                      color:
-                          selected ? Colors.white : Colors.black,
-                    ),
-                    onSelected: (_) {
-                      setState(() {
-                        period = p;
-                        selectedIndex = 0;
-                      });
-                    },
-                  ),
-                );
-              }).toList(),
+          /// PERIOD (SCROLLABLE)
+Padding(
+  padding: const EdgeInsets.symmetric(horizontal: 16),
+  child: SingleChildScrollView(
+    scrollDirection: Axis.horizontal,
+    child: Row(
+      children: StatsPeriod.values.map((p) {
+        final selected = p == period;
+        return Padding(
+          padding: const EdgeInsets.only(right: 8),
+          child: ChoiceChip(
+            label: Text(p.name.toUpperCase()),
+            selected: selected,
+            selectedColor: const Color(0xFF2F8F83),
+            labelStyle: TextStyle(
+              color: selected ? Colors.white : Colors.black,
             ),
+            onSelected: (_) {
+              setState(() {
+                period = p;
+                selectedIndex = 0;
+              });
+            },
           ),
+        );
+      }).toList(),
+    ),
+  ),
+),
 
           const SizedBox(height: 12),
 

@@ -5,6 +5,18 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'widgets/bottom_nav_bar.dart';
 
+/// ================= PROFILE PROVIDER =================
+
+final profileProvider = FutureProvider<Map<String, dynamic>>((ref) async {
+  final user = Supabase.instance.client.auth.currentUser!;
+  final res = await Supabase.instance.client
+      .from('profiles')
+      .select()
+      .eq('user_id', user.id)
+      .single();
+  return res;
+});
+
 class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key});
 
@@ -26,118 +38,122 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     final user = _client.auth.currentUser!;
-
-    final name =
-        user.userMetadata?['name']?.toString() ?? 'User';
-    final phone = user.phone ?? 'Not set';
     final email = user.email ?? '';
+
+    final profileAsync = ref.watch(profileProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Profile'),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            const CircleAvatar(
-              radius: 40,
-              backgroundColor: Color(0xFF2F8F83),
-              child: Icon(Icons.person,
-                  size: 40, color: Colors.white),
+      body: profileAsync.when(
+        loading: () =>
+            const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(child: Text(e.toString())),
+        data: (profile) {
+          final name = profile['full_name'] ?? 'User';
+          final phone = profile['phone'] ?? 'Not set';
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              children: [
+                const CircleAvatar(
+                  radius: 40,
+                  backgroundColor: Color(0xFF2F8F83),
+                  child: Icon(Icons.person,
+                      size: 40, color: Colors.white),
+                ),
+                const SizedBox(height: 16),
+
+                Text(
+                  name,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+
+                const SizedBox(height: 32),
+
+                /// NAME
+                _infoTile(
+                  label: 'Name',
+                  value: name,
+                  loading: loadingName,
+                  onEdit: () => _editName(context, name),
+                ),
+
+                const SizedBox(height: 16),
+
+                /// PHONE
+                _infoTile(
+                  label: 'Phone Number',
+                  value: phone,
+                  loading: loadingPhone,
+                  onEdit: () => _editPhone(context, phone),
+                ),
+
+                const SizedBox(height: 16),
+
+                /// EMAIL
+                _infoTile(
+                  label: 'Email',
+                  value: email,
+                  loading: loadingEmail,
+                  onEdit: () => _changeEmail(context, email),
+                ),
+
+                const SizedBox(height: 16),
+
+                /// PASSWORD
+                _infoTile(
+                  label: 'Password',
+                  value: '••••••••',
+                  loading: loadingPassword,
+                  onEdit: () => _changePassword(context),
+                ),
+
+                const SizedBox(height: 32),
+
+                /// LOGOUT
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor:
+                        const Color.fromARGB(255, 121, 233, 224),
+                    minimumSize: const Size.fromHeight(48),
+                  ),
+                  onPressed: loadingLogout
+                      ? null
+                      : () async {
+                          setState(() => loadingLogout = true);
+                          await _client.auth.signOut();
+                          if (!mounted) return;
+                          context.go('/onboarding');
+                        },
+                  icon: loadingLogout
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.logout),
+                  label: const Text('Logout'),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            Text(
-              name,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 32),
-
-            /// NAME
-            _infoTile(
-              label: 'Name',
-              value: name,
-              loading: loadingName,
-              onEdit: () => _editName(context, name),
-            ),
-
-            const SizedBox(height: 16),
-
-            /// PHONE
-            _infoTile(
-              label: 'Phone Number',
-              value: phone,
-              loading: loadingPhone,
-              onEdit: () => _editPhone(context, phone),
-            ),
-
-            const SizedBox(height: 16),
-
-            /// EMAIL
-            _infoTile(
-              label: 'Email',
-              value: email,
-              loading: loadingEmail,
-              onEdit: () => _changeEmail(context, email),
-            ),
-
-            const SizedBox(height: 16),
-
-            /// PASSWORD
-            _infoTile(
-              label: 'Password',
-              value: '••••••••',
-              loading: loadingPassword,
-              onEdit: () => _changePassword(context),
-            ),
-
-            const SizedBox(height: 32),
-
-            /// LOGOUT
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.redAccent,
-                minimumSize: const Size.fromHeight(48),
-              ),
-              onPressed: loadingLogout
-                  ? null
-                  : () async {
-                      setState(() => loadingLogout = true);
-                      await _client.auth.signOut();
-                      context.go('/onboarding');
-                    },
-              icon: loadingLogout
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : const Icon(Icons.logout),
-              label: const Text('Logout'),
-            ),
-          ],
-        ),
-      ),
-      floatingActionButtonLocation:
-          FloatingActionButtonLocation.centerDocked,
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: const Color(0xFF2F8F83),
-        onPressed: () => context.push('/add'),
-        shape: const CircleBorder(),
-        child: const Icon(Icons.add, color: Colors.white),
+          );
+        },
       ),
       bottomNavigationBar: const BottomNavBar(),
     );
   }
 
-  // ================= NAME =================
+  // ================= NAME (profiles table) =================
 
   void _editName(BuildContext context, String currentName) {
     final ctrl = TextEditingController(text: currentName);
@@ -149,17 +165,15 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       loading: loadingName,
       onSave: () async {
         setState(() => loadingName = true);
-        await _client.auth.updateUser(
-          UserAttributes(data: {'name': ctrl.text}),
-        );
+        await _updateProfile(fullName: ctrl.text);
         setState(() => loadingName = false);
         Navigator.pop(context);
-        setState(() {});
+        ref.invalidate(profileProvider);
       },
     );
   }
 
-  // ================= PHONE =================
+  // ================= PHONE (profiles table) =================
 
   void _editPhone(BuildContext context, String currentPhone) {
     final ctrl = TextEditingController(
@@ -174,17 +188,26 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       loading: loadingPhone,
       onSave: () async {
         setState(() => loadingPhone = true);
-        await _client.auth.updateUser(
-          UserAttributes(phone: ctrl.text),
-        );
+        await _updateProfile(phone: ctrl.text);
         setState(() => loadingPhone = false);
         Navigator.pop(context);
-        setState(() {});
+        ref.invalidate(profileProvider);
       },
     );
   }
 
-  // ================= EMAIL =================
+  Future<void> _updateProfile({
+    String? fullName,
+    String? phone,
+  }) async {
+    final user = _client.auth.currentUser!;
+    await _client.from('profiles').update({
+      if (fullName != null) 'full_name': fullName,
+      if (phone != null) 'phone': phone,
+    }).eq('user_id', user.id);
+  }
+
+  // ================= EMAIL (auth) =================
 
   void _changeEmail(BuildContext context, String currentEmail) {
     final ctrl = TextEditingController(text: currentEmail);
@@ -196,24 +219,22 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       loading: loadingEmail,
       onSave: () async {
         setState(() => loadingEmail = true);
-        await _client.auth.updateUser(
-          UserAttributes(email: ctrl.text),
-        );
+        await _client.auth
+            .updateUser(UserAttributes(email: ctrl.text));
         setState(() => loadingEmail = false);
         Navigator.pop(context);
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text(
-              'Verification email sent. Please confirm.',
-            ),
+            content:
+                Text('Verification email sent. Please confirm.'),
           ),
         );
       },
     );
   }
 
-  // ================= PASSWORD =================
+  // ================= PASSWORD (auth) =================
 
   void _changePassword(BuildContext context) {
     final ctrl = TextEditingController();
@@ -341,9 +362,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               const SizedBox(height: 4),
               Text(
                 value,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                ),
+                style:
+                    const TextStyle(fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -351,7 +371,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               ? const SizedBox(
                   width: 20,
                   height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+                  child:
+                      CircularProgressIndicator(strokeWidth: 2),
                 )
               : IconButton(
                   icon: const Icon(Icons.edit),

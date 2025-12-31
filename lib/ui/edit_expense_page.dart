@@ -11,12 +11,10 @@ class EditExpensePage extends ConsumerStatefulWidget {
   const EditExpensePage({super.key, required this.expense});
 
   @override
-  ConsumerState<EditExpensePage> createState() =>
-      _EditExpensePageState();
+  ConsumerState<EditExpensePage> createState() => _EditExpensePageState();
 }
 
-class _EditExpensePageState
-    extends ConsumerState<EditExpensePage> {
+class _EditExpensePageState extends ConsumerState<EditExpensePage> {
   late TextEditingController titleCtrl;
   late TextEditingController amountCtrl;
   late DateTime date;
@@ -26,8 +24,7 @@ class _EditExpensePageState
   void initState() {
     super.initState();
     titleCtrl = TextEditingController(text: widget.expense.title);
-    amountCtrl =
-        TextEditingController(text: widget.expense.amount.toString());
+    amountCtrl = TextEditingController(text: widget.expense.amount.toString());
     date = widget.expense.expenseDate;
   }
 
@@ -49,6 +46,7 @@ class _EditExpensePageState
         'expense_date': date.toIso8601String(),
       },
     );
+    ref.invalidate(expenseListProvider);
 
     if (!mounted) return;
     context.pop();
@@ -66,17 +64,14 @@ class _EditExpensePageState
             height: height * 0.35,
             color: const Color(0xFF338B85),
           ),
-
           SafeArea(
             child: Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back_ios,
-                        color: Colors.white),
+                    icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
                     onPressed: () => Navigator.pop(context),
                   ),
                   const Text(
@@ -92,7 +87,6 @@ class _EditExpensePageState
               ),
             ),
           ),
-
           Align(
             alignment: Alignment.topCenter,
             child: SingleChildScrollView(
@@ -109,9 +103,7 @@ class _EditExpensePageState
                       controller: titleCtrl,
                       decoration: _inputDecoration(),
                     ),
-
                     const SizedBox(height: 18),
-
                     _label('AMOUNT'),
                     TextField(
                       controller: amountCtrl,
@@ -126,9 +118,7 @@ class _EditExpensePageState
                         ),
                       ),
                     ),
-
                     const SizedBox(height: 18),
-
                     _label('DATE'),
                     TextField(
                       readOnly: true,
@@ -142,15 +132,11 @@ class _EditExpensePageState
                         if (d != null) setState(() => date = d);
                       },
                       decoration: _inputDecoration(
-                        hint:
-                            DateFormat('EEE, dd MMM yyyy').format(date),
-                        suffixIcon:
-                            const Icon(Icons.calendar_month_outlined),
+                        hint: DateFormat('EEE, dd MMM yyyy').format(date),
+                        suffixIcon: const Icon(Icons.calendar_month_outlined),
                       ),
                     ),
-
                     const SizedBox(height: 24),
-
                     _submitButton(
                       isSaving: isSaving,
                       label: 'Update Expense',
@@ -165,111 +151,110 @@ class _EditExpensePageState
       ),
     );
   }
-Widget _label(String text) {
-  return Padding(
-    padding: const EdgeInsets.only(bottom: 8),
-    child: Text(
-      text,
-      style: const TextStyle(
-        color: Colors.grey,
-        fontSize: 12,
-        fontWeight: FontWeight.bold,
-        letterSpacing: 1.1,
-      ),
-    ),
-  );
-}
 
-InputDecoration _inputDecoration({
-  Widget? prefix,
-  Widget? suffix,
-  Widget? suffixIcon,
-  String? hint,
-  bool focused = false,
-}) {
-  return InputDecoration(
-    hintText: hint,
-    prefixIcon: prefix == null
-        ? null
-        : Padding(
-            padding: const EdgeInsets.only(left: 12, top: 14),
-            child: prefix,
-          ),
-    suffixIcon: suffix ?? suffixIcon,
-    border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(12),
-    ),
-    enabledBorder: focused
-        ? OutlineInputBorder(
-            borderSide:
-                const BorderSide(color: Color(0xFF338B85)),
-            borderRadius: BorderRadius.circular(12),
-          )
-        : null,
-  );
-}
-
-Widget _submitButton({
-  required bool isSaving,
-  required String label,
-  required VoidCallback onPressed,
-}) {
-  return SizedBox(
-    width: double.infinity,
-    height: 52,
-    child: ElevatedButton(
-      onPressed: isSaving ? null : onPressed,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: isSaving
-            ? Colors.grey.shade400
-            : const Color(0xFF338B85),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
+  Widget _label(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Text(
+        text,
+        style: const TextStyle(
+          color: Colors.grey,
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 1.1,
         ),
       ),
-      child: isSaving
-          ? const SizedBox(
-              height: 22,
-              width: 22,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: Colors.white,
-              ),
-            )
-          : Text(
-              label,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-              ),
+    );
+  }
+
+  InputDecoration _inputDecoration({
+    Widget? prefix,
+    Widget? suffix,
+    Widget? suffixIcon,
+    String? hint,
+    bool focused = false,
+  }) {
+    return InputDecoration(
+      hintText: hint,
+      prefixIcon: prefix == null
+          ? null
+          : Padding(
+              padding: const EdgeInsets.only(left: 12, top: 14),
+              child: prefix,
             ),
-    ),
-  );
-}
-Widget _card({required List<Widget> children}) {
-  return Container(
-    padding: const EdgeInsets.all(24),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(26),
-      border: Border.all(
-        color: Colors.grey.shade300,
-        width: 1,
+      suffixIcon: suffix ?? suffixIcon,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
       ),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.3),
-          blurRadius: 24,
-          offset: const Offset(0, 12),
-        ),
-      ],
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: children,
-    ),
-  );
-}
+      enabledBorder: focused
+          ? OutlineInputBorder(
+              borderSide: const BorderSide(color: Color(0xFF338B85)),
+              borderRadius: BorderRadius.circular(12),
+            )
+          : null,
+    );
+  }
 
+  Widget _submitButton({
+    required bool isSaving,
+    required String label,
+    required VoidCallback onPressed,
+  }) {
+    return SizedBox(
+      width: double.infinity,
+      height: 52,
+      child: ElevatedButton(
+        onPressed: isSaving ? null : onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor:
+              isSaving ? Colors.grey.shade400 : const Color(0xFF338B85),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+        ),
+        child: isSaving
+            ? const SizedBox(
+                height: 22,
+                width: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
+            : Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+      ),
+    );
+  }
+
+  Widget _card({required List<Widget> children}) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(
+          color: Colors.grey.shade300,
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: children,
+      ),
+    );
+  }
 }

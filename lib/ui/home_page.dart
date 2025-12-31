@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../expenses/expense_provider.dart';
 import '../income/income_provider.dart';
@@ -33,6 +34,15 @@ class HomePage extends ConsumerStatefulWidget {
 
 class _HomePageState extends ConsumerState<HomePage> {
   bool showFabMenu = false;
+  final profileProvider = FutureProvider<Map<String, dynamic>>((ref) async {
+  final user = Supabase.instance.client.auth.currentUser!;
+  final res = await Supabase.instance.client
+      .from('profiles')
+      .select()
+      .eq('user_id', user.id)
+      .single();
+  return res;
+});
 
   String _greeting() {
     final hour = DateTime.now().hour;
@@ -45,6 +55,12 @@ class _HomePageState extends ConsumerState<HomePage> {
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final headerHeight = size.height * 0.30;
+    final profileAsync = ref.watch(profileProvider);
+    final userName = profileAsync.when(
+      data: (data) => data['full_name'] ?? 'User',
+      loading: () => 'User',
+      error: (_, __) => 'User',
+    );
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -91,9 +107,9 @@ class _HomePageState extends ConsumerState<HomePage> {
                                 fontSize: 14,
                               ),
                             ),
-                            const Text(
-                              'User',
-                              style: TextStyle(
+                            Text(
+                              userName,
+                              style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 20,
                                 fontWeight: FontWeight.w600,

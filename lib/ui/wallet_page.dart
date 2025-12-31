@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -22,11 +24,18 @@ class WalletEntry {
 }
 
 /// ---------------- PAGE ----------------
-class WalletPage extends ConsumerWidget {
+class WalletPage extends ConsumerStatefulWidget {
   const WalletPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<WalletPage> createState() => _WalletPageState();
+}
+
+class _WalletPageState extends ConsumerState<WalletPage> {
+  bool showFabMenu = false;
+
+  @override
+  Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
     final statusBar = MediaQuery.of(context).padding.top;
 
@@ -90,7 +99,7 @@ class WalletPage extends ConsumerWidget {
                             WalletEntry(
                               title: i.title,
                               amount: i.amount,
-                              date: i.createdAt??DateTime.now(),
+                              date: i.createdAt ?? DateTime.now(),
                               isIncome: true,
                             ),
                           );
@@ -102,7 +111,7 @@ class WalletPage extends ConsumerWidget {
                             WalletEntry(
                               title: e.title,
                               amount: e.amount,
-                              date: e.createdAt ??DateTime.now(),
+                              date: e.createdAt ?? DateTime.now(),
                               isIncome: false,
                             ),
                           );
@@ -163,17 +172,48 @@ class WalletPage extends ConsumerWidget {
             right: 20,
             child: _walletCard(context, ref),
           ),
+          
+/// ================= BLUR OVERLAY =================
+          if (showFabMenu)
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: () =>
+                    setState(() => showFabMenu = false),
+                child: BackdropFilter(
+                  filter:
+                      ImageFilter.blur(sigmaX: 6, sigmaY: 6),
+                  child: Container(
+                    color: Colors.black.withOpacity(0.25),
+                  ),
+                ),
+              ),
+            ),
+
+          /// ================= FAB MENU =================
+          if (showFabMenu)
+            Positioned(
+              bottom: 90,
+              right: 0,
+              left: 0,
+              child: Center(
+                child: _fabMenu(context),
+              ),
+            ),
         ],
       ),
 
       /// FAB
-      floatingActionButtonLocation:
-          FloatingActionButtonLocation.centerDocked,
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       floatingActionButton: FloatingActionButton(
         backgroundColor: const Color(0xFF2F8F83),
         shape: const CircleBorder(),
-        onPressed: () => context.push('/add'),
-        child: const Icon(Icons.add, color: Colors.white),
+        onPressed: () {
+          setState(() {
+            showFabMenu = !showFabMenu;
+          });
+        },
+        child: Icon(showFabMenu ? Icons.close : Icons.add,
+         color: Colors.white),
       ),
 
       /// BOTTOM NAV
@@ -186,11 +226,9 @@ class WalletPage extends ConsumerWidget {
     final expenses = ref.watch(expenseListProvider).value ?? [];
     final incomes = ref.watch(incomeListProvider).value ?? [];
 
-    final totalIncome =
-        incomes.fold<double>(0, (sum, i) => sum + i.amount);
+    final totalIncome = incomes.fold<double>(0, (sum, i) => sum + i.amount);
 
-    final totalExpense =
-        expenses.fold<double>(0, (sum, e) => sum + e.amount);
+    final totalExpense = expenses.fold<double>(0, (sum, e) => sum + e.amount);
 
     final remaining = totalIncome - totalExpense;
 
@@ -239,6 +277,7 @@ class WalletPage extends ConsumerWidget {
     );
   }
 
+
   Widget _summaryRow(
     String label,
     String value, {
@@ -258,6 +297,77 @@ class WalletPage extends ConsumerWidget {
       ],
     );
   }
+
+  /// ================= FAB MENU =================
+Widget _fabMenu(BuildContext context) {
+  return Material(
+    color: Colors.transparent,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        _fabMenuItem(
+          icon: Icons.remove_circle_outline,
+          label: 'Add Expense',
+          color: Colors.redAccent,
+          onTap: () {
+            setState(() => showFabMenu = false);
+            context.push('/add-expense');
+          },
+        ),
+        const SizedBox(height: 12),
+        _fabMenuItem(
+          icon: Icons.add_circle_outline,
+          label: 'Add Income',
+          color: Colors.green,
+          onTap: () {
+            setState(() => showFabMenu = false);
+            context.push('/add-income');
+          },
+        ),
+      ],
+    ),
+  );
+}
+
+Widget _fabMenuItem({
+  required IconData icon,
+  required String label,
+  required Color color,
+  required VoidCallback onTap,
+}) {
+  return InkWell(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(14),
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.15),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color),
+          const SizedBox(width: 10),
+          Text(
+            label,
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
 }
 
 /// ---------------- LIST TILE ----------------
@@ -290,9 +400,7 @@ Widget _walletListTile(WalletEntry entry) {
 
 String _formatDate(DateTime date) {
   final now = DateTime.now();
-  if (date.year == now.year &&
-      date.month == now.month &&
-      date.day == now.day) {
+  if (date.year == now.year && date.month == now.month && date.day == now.day) {
     return 'Today';
   }
   return '${date.day}/${date.month}/${date.year}';

@@ -1,16 +1,17 @@
 // lib/ui/add_income_page.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
-class AddIncomePage extends StatefulWidget {
+import '../income/income_provider.dart';
+class AddIncomePage extends ConsumerStatefulWidget {
   const AddIncomePage({super.key});
 
   @override
-  State<AddIncomePage> createState() => _AddIncomePageState();
+  ConsumerState<AddIncomePage> createState() => _AddIncomePageState();
 }
 
-class _AddIncomePageState extends State<AddIncomePage> {
+class _AddIncomePageState extends ConsumerState<AddIncomePage> {
   final titleCtrl = TextEditingController();
   final amountCtrl = TextEditingController();
   final sourceCtrl = TextEditingController();
@@ -64,7 +65,7 @@ class _AddIncomePageState extends State<AddIncomePage> {
           duration: Duration(seconds: 2),
         ),
       );
-
+      ref.invalidate(incomeListProvider);
       await Future.delayed(const Duration(milliseconds: 400));
       Navigator.pop(context);
     } catch (e) {

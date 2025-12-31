@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
-class AddExpensePage extends StatefulWidget {
+import '../expenses/expense_provider.dart';
+class AddExpensePage extends ConsumerStatefulWidget {
   const AddExpensePage({super.key});
 
   @override
-  State<AddExpensePage> createState() => _AddExpensePageState();
+  ConsumerState<AddExpensePage> createState() => _AddExpensePageState();
 }
 
-class _AddExpensePageState extends State<AddExpensePage> {
+class _AddExpensePageState extends ConsumerState<AddExpensePage> {
   final titleCtrl = TextEditingController();
   final amountCtrl = TextEditingController();
 
@@ -60,7 +61,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
           duration: Duration(seconds: 2),
         ),
       );
-
+      ref.invalidate(expenseListProvider);
       await Future.delayed(const Duration(milliseconds: 500));
       Navigator.pop(context);
     } catch (e) {

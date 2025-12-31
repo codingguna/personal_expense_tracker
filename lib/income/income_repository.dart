@@ -19,12 +19,12 @@ class IncomeRepository {
         .toList();
   }
 
-  Future<void> addIncome(double amount) async {
-    final user = _client.auth.currentUser!;
-    await _client.from('incomes').insert({
-      'user_id': user.id,
-      'amount': amount,
-      'created_at': DateTime.now().toUtc().toIso8601String(),
-    });
-  }
+  // Future<void> addIncome(double amount) async {
+  //   final user = _client.auth.currentUser!;
+  //   await _client.from('incomes').insert({
+  //     'user_id': user.id,
+  //     'amount': amount,
+  //     'created_at': DateTime.now().toUtc().toIso8601String(),
+  //   });
+  // }
 }

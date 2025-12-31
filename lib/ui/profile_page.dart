@@ -130,6 +130,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       floatingActionButton: FloatingActionButton(
         backgroundColor: const Color(0xFF2F8F83),
         onPressed: () => context.push('/add'),
+        shape: const CircleBorder(),
         child: const Icon(Icons.add, color: Colors.white),
       ),
       bottomNavigationBar: const BottomNavBar(),

@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../expenses/expense_model.dart';
 import '../ui/add_expense_page.dart';
+import '../ui/add_income_page.dart';
 import '../ui/edit_expense_page.dart';
 import '../ui/home_page.dart';
 import '../ui/login_page.dart';
@@ -76,8 +77,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, __) => const HomePage(),
       ),
       GoRoute(
-        path: '/add',
-        builder: (_, __) => AddExpensePage(),
+        path: '/add-expense',
+        builder: (_, __) => const AddExpensePage(),
+      ),
+      GoRoute(
+        path: '/add-income',
+        builder: (_, __) => const AddIncomePage(),
       ),
       GoRoute(
         path: '/verifyemail',

@@ -88,7 +88,7 @@ class WalletPage extends ConsumerWidget {
                         for (final i in incomes) {
                           entries.add(
                             WalletEntry(
-                              title: 'Income',
+                              title: i.title,
                               amount: i.amount,
                               date: i.createdAt??DateTime.now(),
                               isIncome: true,
@@ -173,7 +173,7 @@ class WalletPage extends ConsumerWidget {
         backgroundColor: const Color(0xFF2F8F83),
         shape: const CircleBorder(),
         onPressed: () => context.push('/add'),
-        child: const Icon(Icons.add),
+        child: const Icon(Icons.add, color: Colors.white),
       ),
 
       /// BOTTOM NAV

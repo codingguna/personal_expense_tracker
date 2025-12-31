@@ -1,12 +1,36 @@
 // lib/ui/widgets/balance_card.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../expenses/expense_provider.dart';
+import '../../income/income_provider.dart';
 import 'balance_chip.dart';
 
-class BalanceCard extends StatelessWidget {
+class BalanceCard extends ConsumerWidget {
   const BalanceCard({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final expensesAsync = ref.watch(expenseListProvider);
+    final incomesAsync = ref.watch(incomeListProvider);
+
+    final expenses =
+        expensesAsync.value ?? [];
+    final incomes =
+        incomesAsync.value ?? [];
+
+    final totalExpense = expenses.fold<double>(
+      0,
+      (sum, e) => sum + e.amount,
+    );
+
+    final totalIncome = incomes.fold<double>(
+      0,
+      (sum, i) => sum + i.amount,
+    );
+
+    final balance = totalIncome - totalExpense;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -22,33 +46,36 @@ class BalanceCard extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
-          Text(
+        children: [
+          const Text(
             'Total Balance',
             style: TextStyle(color: Colors.white70),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Text(
-            '₹2,548.00',
-            style: TextStyle(
+            '₹${balance.toStringAsFixed(0)}',
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 28,
               fontWeight: FontWeight.bold,
             ),
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
+
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               BalanceChip(
                 icon: Icons.arrow_downward,
                 label: 'Income',
-                amount: '₹1,840',
+                amount:
+                    '₹${totalIncome.toStringAsFixed(0)}',
               ),
               BalanceChip(
                 icon: Icons.arrow_upward,
                 label: 'Expenses',
-                amount: '₹284',
+                amount:
+                    '₹${totalExpense.toStringAsFixed(0)}',
               ),
             ],
           ),

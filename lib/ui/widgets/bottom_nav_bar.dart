@@ -9,9 +9,14 @@ class BottomNavBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final location = GoRouterState.of(context).uri.path;
 
+    final bool isStatistics =
+        location.startsWith('/statistics');
+
     return BottomAppBar(
-      shape: const CircularNotchedRectangle(),
-      notchMargin: 8,
+      shape: isStatistics
+          ? null 
+          : const CircularNotchedRectangle(),
+      notchMargin: isStatistics ? 0 : 8,
       child: SizedBox(
         height: 50,
         child: Row(
@@ -27,9 +32,12 @@ class BottomNavBar extends StatelessWidget {
               context,
               icon: Icons.bar_chart_outlined,
               route: '/statistics',
-              isActive: location.startsWith('/statistics'),
+              isActive: isStatistics,
             ),
-            const SizedBox(width: 40),
+
+            /// 🔹 CENTER GAP (CONDITIONAL)
+            SizedBox(width: isStatistics ? 0 : 40),
+
             _navIcon(
               context,
               icon: Icons.account_balance_wallet_outlined,

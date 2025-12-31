@@ -1,12 +1,13 @@
 // lib/ui/home_page.dart
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../expenses/expense_provider.dart';
+import '../income/income_provider.dart';
 import 'widgets/balance_card.dart';
 import 'widgets/bottom_nav_bar.dart';
-import '../income/income_provider.dart';
 
 /// ---------- MODEL ----------
 class HomeEntry {
@@ -23,8 +24,15 @@ class HomeEntry {
   });
 }
 
-class HomePage extends ConsumerWidget {
+class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
+
+  @override
+  ConsumerState<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends ConsumerState<HomePage> {
+  bool showFabMenu = false;
 
   String _greeting() {
     final hour = DateTime.now().hour;
@@ -34,195 +42,285 @@ class HomePage extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-
-
+  Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final headerHeight = size.height * 0.30;
 
     return Scaffold(
       backgroundColor: Colors.white,
+
       body: Stack(
-        clipBehavior: Clip.none,
         children: [
-          /// 1️⃣ BASE WHITE
-          Container(color: Colors.white),
+          /// ================= MAIN CONTENT =================
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(color: Colors.white),
 
-          /// 2️⃣ HEADER IMAGE
-          SizedBox(
-            height: headerHeight,
-            width: double.infinity,
-            child: Image.asset(
-              'assets/homeheader.png',
-              fit: BoxFit.fill,
-            ),
-          ),
+              /// HEADER IMAGE
+              SizedBox(
+                height: headerHeight,
+                width: double.infinity,
+                child: Image.asset(
+                  'assets/homeheader.png',
+                  fit: BoxFit.fill,
+                ),
+              ),
 
-          /// 3️⃣ GREETING + NOTIFICATION
-          Positioned(
-            top: 20,
-            left: 0,
-            right: 0,
-            child: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+              /// GREETING
+              Positioned(
+                top: 20,
+                left: 0,
+                right: 0,
+                child: SafeArea(
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                    child: Row(
+                      mainAxisAlignment:
+                          MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          _greeting(),
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 14,
-                          ),
+                        Column(
+                          crossAxisAlignment:
+                              CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _greeting(),
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const Text(
+                              'User',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                         ),
-                        const Text(
-                          'User',
-                          style: TextStyle(
+                        IconButton(
+                          icon: const Icon(
+                            Icons.notifications_none,
                             color: Colors.white,
-                            fontSize: 20,
-                            fontWeight: FontWeight.w600,
+                            size: 26,
                           ),
+                          onPressed: () {},
                         ),
                       ],
                     ),
+                  ),
+                ),
+              ),
 
-                    IconButton(
-                      icon: const Icon(
-                        Icons.notifications_none,
-                        color: Colors.white,
-                        size: 26,
-                      ),
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('No notifications yet'),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
+              /// BALANCE CARD
+              Positioned(
+                top: headerHeight - 100,
+                left: 20,
+                right: 20,
+                child: const BalanceCard(),
+              ),
+
+              /// LIST CONTENT
+              Positioned(
+                top: headerHeight + 80,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: _buildTransactionList(),
+              ),
+            ],
+          ),
+
+          /// ================= BLUR OVERLAY =================
+          if (showFabMenu)
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: () =>
+                    setState(() => showFabMenu = false),
+                child: BackdropFilter(
+                  filter:
+                      ImageFilter.blur(sigmaX: 6, sigmaY: 6),
+                  child: Container(
+                    color: Colors.black.withOpacity(0.25),
+                  ),
                 ),
               ),
             ),
-          ),
 
-          /// 4️⃣ BALANCE CARD
-          Positioned(
-            top: headerHeight - 100,
-            left: 20,
-            right: 20,
-            child: const BalanceCard(),
-          ),
-
-          /// 5️⃣ MAIN CONTENT (UPDATED)
-/// 5️⃣ MAIN CONTENT (UPDATED – REAL DATA)
-Positioned(
-  top: headerHeight + 80,
-  left: 0,
-  right: 0,
-  bottom: 0,
-  child: Consumer(
-    builder: (context, ref, _) {
-      final expensesAsync = ref.watch(expenseListProvider);
-      final incomesAsync = ref.watch(incomeListProvider);
-
-      return expensesAsync.when(
-        loading: () =>
-            const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text(e.toString())),
-        data: (expenses) {
-          return incomesAsync.when(
-            loading: () =>
-                const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Center(child: Text(e.toString())),
-            data: (incomes) {
-              /// 🔹 Unified list
-              final List<HomeEntry> entries = [];
-
-              // ✅ Income entries
-              for (final i in incomes) {
-                entries.add(
-                  HomeEntry(
-                    title: 'Income',
-                    amount: i.amount,
-                    date: i.createdAt ?? DateTime.now(),
-                    isIncome: true,
-                  ),
-                );
-              }
-
-              // ✅ Expense entries
-              for (final e in expenses) {
-                entries.add(
-                  HomeEntry(
-                    title: e.title,
-                    amount: e.amount,
-                    date: e.createdAt ?? DateTime.now(), // USE createdAt
-                    isIncome: false,
-                  ),
-                );
-              }
-
-              // Sort latest first
-              entries.sort((a, b) => b.date.compareTo(a.date));
-
-              return ListView(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
-                children: [
-                  /// TITLE ROW
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: const [
-                      Text(
-                        'Income & Expense Listing',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        'See all',
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  if (entries.isEmpty)
-                    const Center(
-                      child: Text('No transactions yet'),
-                    )
-                  else
-                    ...entries.map(_homeListTile),
-                ],
-              );
-            },
-          );
-        },
-      );
-    },
-  ),
-),
+          /// ================= FAB MENU =================
+          if (showFabMenu)
+            Positioned(
+              bottom: 90,
+              right: 0,
+              left: 0,
+              child: Center(
+                child: _fabMenu(context),
+              ),
+            ),
         ],
       ),
 
-      /// ✅ FAB
+      /// FAB
       floatingActionButtonLocation:
           FloatingActionButtonLocation.centerDocked,
       floatingActionButton: FloatingActionButton(
         backgroundColor: const Color(0xFF2F8F83),
-        onPressed: () => context.push('/add'),
-        shape: const CircleBorder(),
-        child: const Icon(Icons.add, color: Colors.white),
+        shape: CircleBorder(),
+        onPressed: () {
+          setState(() {
+            showFabMenu = !showFabMenu;
+          });
+        },
+        child: Icon(
+          showFabMenu ? Icons.close : Icons.add,
+          color: Colors.white,
+        ),
       ),
 
-      /// ✅ Bottom Nav
       bottomNavigationBar: const BottomNavBar(),
+    );
+  }
+
+  /// ================= TRANSACTION LIST =================
+  Widget _buildTransactionList() {
+    final expensesAsync = ref.watch(expenseListProvider);
+    final incomesAsync = ref.watch(incomeListProvider);
+
+    return expensesAsync.when(
+      loading: () =>
+          const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(child: Text(e.toString())),
+      data: (expenses) {
+        return incomesAsync.when(
+          loading: () =>
+              const Center(child: CircularProgressIndicator()),
+          error: (e, _) => Center(child: Text(e.toString())),
+          data: (incomes) {
+            final List<HomeEntry> entries = [];
+
+            for (final i in incomes) {
+              entries.add(
+                HomeEntry(
+                  title: i.title,
+                  amount: i.amount,
+                  date: i.createdAt ?? DateTime.now(),
+                  isIncome: true,
+                ),
+              );
+            }
+
+            for (final e in expenses) {
+              entries.add(
+                HomeEntry(
+                  title: e.title,
+                  amount: e.amount,
+                  date: e.expenseDate,
+                  isIncome: false,
+                ),
+              );
+            }
+
+            entries.sort(
+              (a, b) => b.date.compareTo(a.date),
+            );
+
+            return ListView(
+              padding:
+                  const EdgeInsets.fromLTRB(16, 0, 16, 120),
+              children: [
+                const Text(
+                  'Income & Expense Listing',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                if (entries.isEmpty)
+                  const Center(
+                    child: Text('No transactions yet'),
+                  )
+                else
+                  ...entries.map(_homeListTile),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  /// ================= FAB MENU =================
+  Widget _fabMenu(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          _fabMenuItem(
+            icon: Icons.remove_circle_outline,
+            label: 'Add Expense',
+            color: Colors.redAccent,
+            onTap: () {
+              setState(() => showFabMenu = false);
+              context.push('/add-expense');
+            },
+          ),
+          const SizedBox(height: 12),
+          _fabMenuItem(
+            icon: Icons.add_circle_outline,
+            label: 'Add Income',
+            color: Colors.green,
+            onTap: () {
+              setState(() => showFabMenu = false);
+              context.push('/add-income');
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _fabMenuItem({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.15),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: color),
+            const SizedBox(width: 10),
+            Text(
+              label,
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -232,14 +330,9 @@ Widget _homeListTile(HomeEntry entry) {
   return Padding(
     padding: const EdgeInsets.only(bottom: 12),
     child: ListTile(
-      contentPadding: EdgeInsets.zero,
-      title: Text(
-        entry.title,
-        style: const TextStyle(fontWeight: FontWeight.w600),
-      ),
+      title: Text(entry.title),
       subtitle: Text(
-        _formatDate(entry.date),
-        style: const TextStyle(fontSize: 12),
+        '${entry.date.day}/${entry.date.month}/${entry.date.year}',
       ),
       trailing: Text(
         entry.isIncome
@@ -248,19 +341,8 @@ Widget _homeListTile(HomeEntry entry) {
         style: TextStyle(
           color: entry.isIncome ? Colors.green : Colors.red,
           fontWeight: FontWeight.bold,
-          fontSize: 16,
         ),
       ),
     ),
   );
-}
-
-String _formatDate(DateTime date) {
-  final now = DateTime.now();
-  if (date.year == now.year &&
-      date.month == now.month &&
-      date.day == now.day) {
-    return 'Today';
-  }
-  return '${date.day}/${date.month}/${date.year}';
 }

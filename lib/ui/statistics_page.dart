@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:go_router/go_router.dart';
-
+import 'widgets/bottom_nav_bar.dart';
 import '../expenses/expense_model.dart';
 import '../expenses/expense_provider.dart';
 import '../income/income_model.dart';
@@ -126,6 +126,18 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage> {
 
           const SizedBox(height: 16),
 
+          Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      child: Text(
+        type == StatsType.expense
+            ? 'Expenses List'
+            : 'Income List',
+        style: const TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    ),
           /// LIST
           Expanded(
             child: type == StatsType.expense
@@ -134,15 +146,7 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage> {
           ),
         ],
       ),
-
-      floatingActionButtonLocation:
-          FloatingActionButtonLocation.centerDocked,
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: const Color(0xFF2F8F83),
-        onPressed: () => context.push('/add'),
-        shape: CircleBorder(),
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
+      bottomNavigationBar: const BottomNavBar(),
     );
   }
 
@@ -362,7 +366,7 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage> {
     final step = _labelStep(context);
 
     return SizedBox(
-      height: 220,
+      height: MediaQuery.of(context).size.height * 0.22,
       child: LineChart(
         LineChartData(
           minY: _minY(),
@@ -507,7 +511,7 @@ double _minY() {
   final nonZero = values.where((v) => v > 0).toList();
   if (nonZero.isEmpty) return 0;
 
-  final minValue = nonZero.reduce((a, b) => a < b ? a : b);
+  // final minValue = nonZero.reduce((a, b) => a < b ? a : b);
 
   // Lift baseline slightly for Day view only
   if (period == StatsPeriod.day) {

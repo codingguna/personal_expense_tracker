@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.codingguna.personal_expense_tracker"
+    namespace = "com.example.personal_expense_tracker"
     compileSdk = 36
     ndkVersion = "29.0.13113456"
 

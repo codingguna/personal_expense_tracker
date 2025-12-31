@@ -7,11 +7,13 @@ class BottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final location = GoRouterState.of(context).uri.path;
+
     return BottomAppBar(
       shape: const CircularNotchedRectangle(),
       notchMargin: 8,
       child: SizedBox(
-        height: 64,
+        height: 50,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
@@ -19,22 +21,26 @@ class BottomNavBar extends StatelessWidget {
               context,
               icon: Icons.home_outlined,
               route: '/',
+              isActive: location == '/',
             ),
             _navIcon(
               context,
               icon: Icons.bar_chart_outlined,
               route: '/statistics',
+              isActive: location.startsWith('/statistics'),
             ),
-            const SizedBox(width: 40), // space for FAB
+            const SizedBox(width: 40),
             _navIcon(
               context,
               icon: Icons.account_balance_wallet_outlined,
               route: '/wallet',
+              isActive: location.startsWith('/wallet'),
             ),
             _navIcon(
               context,
               icon: Icons.person_outline,
               route: '/profile',
+              isActive: location.startsWith('/profile'),
             ),
           ],
         ),
@@ -46,10 +52,27 @@ class BottomNavBar extends StatelessWidget {
     BuildContext context, {
     required IconData icon,
     required String route,
+    required bool isActive,
   }) {
-    return IconButton(
-      icon: Icon(icon, color: Colors.grey),
-      onPressed: () => context.go(route),
+    final activeColor = const Color(0xFF2F8F83);
+
+    return InkResponse(
+      radius: 28,
+      onTap: () => context.go(route),
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: isActive
+              ? activeColor.withOpacity(0.12)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(
+          icon,
+          size: 26,
+          color: isActive ? activeColor : Colors.grey,
+        ),
+      ),
     );
   }
 }

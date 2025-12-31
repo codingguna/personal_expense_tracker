@@ -1,101 +1,296 @@
-// lib/ui/add_expense_page.dart
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:go_router/go_router.dart';
 
-import '../expenses/expense_provider.dart';
-import '../shared/constant.dart';
-import 'widgets/gradient_header.dart';
-
-class AddExpensePage extends ConsumerStatefulWidget {
+class AddExpensePage extends StatefulWidget {
   const AddExpensePage({super.key});
 
   @override
-  ConsumerState<AddExpensePage> createState() =>
-      _AddExpensePageState();
+  State<AddExpensePage> createState() => _AddExpensePageState();
 }
 
-class _AddExpensePageState
-    extends ConsumerState<AddExpensePage> {
+class _AddExpensePageState extends State<AddExpensePage> {
   final titleCtrl = TextEditingController();
   final amountCtrl = TextEditingController();
 
-  String category = expenseCategories.first;
   DateTime date = DateTime.now();
+  bool isSaving = false;
+
+  @override
+  void dispose() {
+    titleCtrl.dispose();
+    amountCtrl.dispose();
+    super.dispose();
+  }
+
+  // ---------------- SAVE EXPENSE ----------------
+
+  Future<void> _saveExpense() async {
+    if (titleCtrl.text.isEmpty || amountCtrl.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please fill all fields'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() => isSaving = true);
+
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) throw 'User not logged in';
+
+      await Supabase.instance.client.from('expenses').insert({
+        'title': titleCtrl.text.trim(),
+        'amount': double.parse(amountCtrl.text.trim()),
+        'expense_date': date.toIso8601String(),
+        'category': 'General',
+        'user_id': user.id,
+      });
+
+      if (!mounted) return;
+
+      // ✅ SUCCESS SNACKBAR
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Expense added successfully'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
+        ),
+      );
+
+      await Future.delayed(const Duration(milliseconds: 500));
+      Navigator.pop(context);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString()),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => isSaving = false);
+    }
+  }
+
+  // ---------------- UI ----------------
 
   @override
   Widget build(BuildContext context) {
+    final height = MediaQuery.of(context).size.height;
+
     return Scaffold(
+      backgroundColor: Colors.white,
       resizeToAvoidBottomInset: true,
       body: Stack(
         children: [
-          const GradientHeader(title: 'Add Expense'),
+          // 🔹 TEAL HEADER
+          Container(
+            height: height * 0.35,
+            color: const Color(0xFF338B85),
+          ),
 
-          Positioned.fill(
-            top: 160,
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color:
-                    Theme.of(context).scaffoldBackgroundColor,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(32),
-                ),
-              ),
-              child: SingleChildScrollView(
-                keyboardDismissBehavior:
-                    ScrollViewKeyboardDismissBehavior.onDrag,
-                padding:
-                    const EdgeInsets.only(bottom: 120),
-                child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
-                  children: [
-                    _input('NAME', titleCtrl),
-                    const SizedBox(height: 16),
-
-                    _amountInput(),
-                    const SizedBox(height: 16),
-
-                    _datePicker(context),
-                    const SizedBox(height: 16),
-
-                    _categoryPicker(),
-                    const SizedBox(height: 40),
-
-                    SizedBox(
-                      width: double.infinity,
-                      height: 52,
-                      child: ElevatedButton(
-                        onPressed: () async {
-                          final user = Supabase
-                              .instance
-                              .client
-                              .auth
-                              .currentUser!;
-
-                          await ref
-                              .read(
-                                  expenseRepositoryProvider)
-                              .addExpense({
-                            'title': titleCtrl.text,
-                            'amount': double.parse(
-                                amountCtrl.text),
-                            'category': category,
-                            'expense_date':
-                                date.toIso8601String(),
-                            'user_id': user.id,
-                          });
-
-                          context.pop();
-                        },
-                        child:
-                            const Text('Save Expense'),
-                      ),
+          // 🔹 HEADER BAR
+          SafeArea(
+            child: Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back_ios,
+                        color: Colors.white),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                  const Text(
+                    'Add Expense',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
                     ),
-                  ],
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.more_horiz,
+                        color: Colors.white, size: 28),
+                    onPressed: () {},
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // 🔹 CENTERED WHITE CARD
+          Align(
+            alignment: Alignment.topCenter,
+            child: SingleChildScrollView(
+              padding: EdgeInsets.only(
+                top: height * 0.18,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+              ),
+              child: FractionallySizedBox(
+                widthFactor: 0.9,
+                child: Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(26),
+                    border: Border.all(
+                      color: Colors.grey.shade300,
+                      width: 1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.3),
+                        blurRadius: 24,
+                        offset: const Offset(0, 12),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _label('NAME'),
+                      TextField(
+                        controller: titleCtrl,
+                        decoration: _inputDecoration(),
+                      ),
+
+                      const SizedBox(height: 18),
+
+                      _label('AMOUNT'),
+                      TextField(
+                        controller: amountCtrl,
+                        keyboardType: TextInputType.number,
+                        decoration: _inputDecoration(
+                          prefix: const Text(
+                            '\$ ',
+                            style: TextStyle(
+                              color: Color(0xFF338B85),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          suffix: TextButton(
+                            onPressed: () => amountCtrl.clear(),
+                            child: const Text(
+                              'Clear',
+                              style: TextStyle(
+                                color: Color(0xFF338B85),
+                              ),
+                            ),
+                          ),
+                          focused: true,
+                        ),
+                      ),
+
+                      const SizedBox(height: 18),
+
+                      _label('DATE'),
+                      TextField(
+                        readOnly: true,
+                        onTap: () async {
+                          final d = await showDatePicker(
+                            context: context,
+                            initialDate: date,
+                            firstDate: DateTime(2020),
+                            lastDate: DateTime.now(),
+                          );
+                          if (d != null) setState(() => date = d);
+                        },
+                        decoration: _inputDecoration(
+                          hint: DateFormat('EEE, dd MMM yyyy').format(date),
+                          suffixIcon:
+                              const Icon(Icons.calendar_month_outlined),
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+
+_label('CATEGORY'),
+
+Container(
+  height: 60,
+  decoration: BoxDecoration(
+    borderRadius: BorderRadius.circular(12),
+    border: Border.all(
+      color: Colors.grey.shade300,
+      width: 1,
+    ),
+  ),
+  child: InkWell(
+    borderRadius: BorderRadius.circular(12),
+    onTap: () {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Category selector coming soon'),
+        ),
+      );
+    },
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        CircleAvatar(
+          radius: 12,
+          backgroundColor: Colors.grey.shade600,
+          child: const Icon(
+            Icons.add,
+            size: 16,
+            color: Colors.white,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Text(
+          'Add Category',
+          style: TextStyle(
+            color: Colors.grey.shade600,
+            fontSize: 16,
+          ),
+        ),
+      ],
+    ),
+  ),
+),
+
+
+                      const SizedBox(height: 24),
+
+                      // 🔹 SUBMIT BUTTON
+                      SizedBox(
+                        width: double.infinity,
+                        height: 52,
+                        child: ElevatedButton(
+                          onPressed: isSaving ? null : _saveExpense,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: isSaving
+                                ? Colors.grey.shade400
+                                : const Color(0xFF338B85),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          child: isSaving
+                              ? const SizedBox(
+                                  height: 22,
+                                  width: 22,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Text(
+                                  'Save Expense',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white
+                                  ),
+                                ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -105,90 +300,49 @@ class _AddExpensePageState
     );
   }
 
-  // ---------- INPUTS ----------
+  // ---------------- HELPERS ----------------
 
-  Widget _input(String label, TextEditingController c) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label,
-            style: const TextStyle(color: Colors.grey)),
-        const SizedBox(height: 6),
-        TextField(controller: c),
-      ],
-    );
-  }
-
-  Widget _amountInput() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('AMOUNT',
-            style: TextStyle(color: Colors.grey)),
-        const SizedBox(height: 6),
-        TextField(
-          controller: amountCtrl,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(
-            prefixText: '₹ ',
-            suffixText: 'Clear',
-            suffixStyle:
-                TextStyle(color: Color(0xFF2F8F83)),
-          ),
+  Widget _label(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Text(
+        text,
+        style: const TextStyle(
+          color: Colors.grey,
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 1.1,
         ),
-      ],
+      ),
     );
   }
 
-  Widget _datePicker(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('DATE',
-            style: TextStyle(color: Colors.grey)),
-        const SizedBox(height: 6),
-        InkWell(
-          onTap: () async {
-            final d = await showDatePicker(
-              context: context,
-              initialDate: date,
-              firstDate: DateTime(2020),
-              lastDate: DateTime.now(),
-            );
-            if (d != null) {
-              setState(() => date = d);
-            }
-          },
-          child: InputDecorator(
-            decoration: const InputDecoration(
-              suffixIcon:
-                  Icon(Icons.calendar_today),
+  InputDecoration _inputDecoration({
+    Widget? prefix,
+    Widget? suffix,
+    String? hint,
+    bool focused = false,
+    Widget? suffixIcon,
+  }) {
+    return InputDecoration(
+      hintText: hint,
+      prefixIcon: prefix == null
+          ? null
+          : Padding(
+              padding: const EdgeInsets.only(left: 12, top: 14),
+              child: prefix,
             ),
-            child: Text(
-              DateFormat('EEE, dd MMM yyyy')
-                  .format(date),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _categoryPicker() {
-    return DropdownButtonFormField<String>(
-      value: category,
-      items: expenseCategories
-          .map(
-            (c) => DropdownMenuItem(
-              value: c,
-              child: Text(c),
-            ),
-          )
-          .toList(),
-      onChanged: (v) =>
-          setState(() => category = v!),
-      decoration:
-          const InputDecoration(labelText: 'Category'),
+      suffixIcon: suffix ?? suffixIcon,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      enabledBorder: focused
+          ? OutlineInputBorder(
+              borderSide:
+                  const BorderSide(color: Color(0xFF338B85)),
+              borderRadius: BorderRadius.circular(12),
+            )
+          : null,
     );
   }
 }

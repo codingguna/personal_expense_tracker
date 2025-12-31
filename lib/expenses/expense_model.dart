@@ -20,6 +20,9 @@ class Expense {
   @JsonKey(name: 'expense_date')
   final DateTime expenseDate;
 
+  @JsonKey(name: 'created_at')
+  final DateTime? createdAt; 
+
   Expense({
     required this.id,
     required this.userId,
@@ -27,6 +30,7 @@ class Expense {
     required this.amount,
     required this.category,
     required this.expenseDate,
+    required this.createdAt,
   });
 
   factory Expense.fromJson(Map<String, dynamic> json) =>

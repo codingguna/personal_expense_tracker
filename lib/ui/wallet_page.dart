@@ -1,129 +1,199 @@
-// lib/ui/wallet_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
+import 'package:go_router/go_router.dart';
 
 import '../expenses/expense_provider.dart';
-import 'widgets/income_provider.dart';
-import 'widgets/gradient_header.dart';
+import '../income/income_provider.dart';
+import 'widgets/bottom_nav_bar.dart';
 
+/// ---------------- MODEL ----------------
+class WalletEntry {
+  final String title;
+  final double amount;
+  final DateTime date;
+  final bool isIncome;
+
+  WalletEntry({
+    required this.title,
+    required this.amount,
+    required this.date,
+    required this.isIncome,
+  });
+}
+
+/// ---------------- PAGE ----------------
 class WalletPage extends ConsumerWidget {
   const WalletPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final expensesAsync = ref.watch(expenseListProvider);
-    final income = ref.watch(incomeProvider);
+    final screenHeight = MediaQuery.of(context).size.height;
+    final statusBar = MediaQuery.of(context).padding.top;
 
     return Scaffold(
+      backgroundColor: Colors.white,
       body: Stack(
         children: [
-          const GradientHeader(title: 'Wallet'),
+          /// BASE
+          Container(color: Colors.white),
 
-          Positioned.fill(
-            top: 160,
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Theme.of(context).scaffoldBackgroundColor,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(32),
+          /// HEADER IMAGE
+          SizedBox(
+            height: screenHeight * 0.30,
+            width: double.infinity,
+            child: Image.asset(
+              'assets/homeheader.png',
+              fit: BoxFit.fill,
+            ),
+          ),
+
+          /// TITLE
+          Positioned(
+            top: statusBar + 30,
+            left: 0,
+            right: 0,
+            child: const Center(
+              child: Text(
+                'Wallet',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 26,
+                  fontWeight: FontWeight.w600,
                 ),
-              ),
-              child: expensesAsync.when(
-                loading: () =>
-                    const Center(child: CircularProgressIndicator()),
-                error: (e, _) =>
-                    Center(child: Text(e.toString())),
-                data: (expenses) {
-                  final totalSpent = expenses.fold<double>(
-                    0,
-                    (sum, e) => sum + e.amount,
-                  );
-
-                  final remaining = income - totalSpent;
-
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _summaryCard(
-                        context,
-                        ref,
-                        income: income,
-                        spent: totalSpent,
-                        remaining: remaining,
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      const Text(
-                        'Spending History',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-
-                      const SizedBox(height: 12),
-
-                      Expanded(
-                        child: expenses.isEmpty
-                            ? const Center(
-                                child: Text('No spending yet'),
-                              )
-                            : ListView.separated(
-                                itemCount: expenses.length,
-                                separatorBuilder: (_, __) =>
-                                    const Divider(),
-                                itemBuilder: (_, i) {
-                                  final e = expenses[i];
-                                  return ListTile(
-                                    leading: const CircleAvatar(
-                                      backgroundColor:
-                                          Color(0xFFEEF6F5),
-                                      child: Icon(
-                                        Icons.shopping_bag,
-                                        color:
-                                            Color(0xFF2F8F83),
-                                      ),
-                                    ),
-                                    title: Text(e.title),
-                                    subtitle: Text(
-                                      DateFormat('dd MMM yyyy')
-                                          .format(e.expenseDate),
-                                    ),
-                                    trailing: Text(
-                                      '- ₹${e.amount}',
-                                      style: const TextStyle(
-                                        color: Colors.red,
-                                        fontWeight:
-                                            FontWeight.bold,
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                      ),
-                    ],
-                  );
-                },
               ),
             ),
           ),
+
+          /// MAIN CONTENT
+          Positioned.fill(
+            top: screenHeight * 0.30,
+            child: Consumer(
+              builder: (context, ref, _) {
+                final expensesAsync = ref.watch(expenseListProvider);
+                final incomesAsync = ref.watch(incomeListProvider);
+
+                return expensesAsync.when(
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
+                  error: (e, _) => Center(child: Text(e.toString())),
+                  data: (expenses) {
+                    return incomesAsync.when(
+                      loading: () =>
+                          const Center(child: CircularProgressIndicator()),
+                      error: (e, _) => Center(child: Text(e.toString())),
+                      data: (incomes) {
+                        final List<WalletEntry> entries = [];
+
+                        /// INCOMES
+                        for (final i in incomes) {
+                          entries.add(
+                            WalletEntry(
+                              title: 'Income',
+                              amount: i.amount,
+                              date: i.createdAt??DateTime.now(),
+                              isIncome: true,
+                            ),
+                          );
+                        }
+
+                        /// EXPENSES
+                        for (final e in expenses) {
+                          entries.add(
+                            WalletEntry(
+                              title: e.title,
+                              amount: e.amount,
+                              date: e.createdAt ??DateTime.now(),
+                              isIncome: false,
+                            ),
+                          );
+                        }
+
+                        /// SORT (latest first)
+                        entries.sort((a, b) => b.date.compareTo(a.date));
+
+                        return SingleChildScrollView(
+                          padding: const EdgeInsets.fromLTRB(
+                            16,
+                            140,
+                            16,
+                            140,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: const [
+                                  Text(
+                                    'Income & Expense Listing',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  Text(
+                                    'See all',
+                                    style: TextStyle(color: Colors.grey),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              if (entries.isEmpty)
+                                const Center(
+                                  child: Text('No transactions yet'),
+                                )
+                              else
+                                ...entries.map(_walletListTile),
+                            ],
+                          ),
+                        );
+                      },
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+
+          /// WALLET CARD
+          Positioned(
+            top: screenHeight * 0.18,
+            left: 20,
+            right: 20,
+            child: _walletCard(context, ref),
+          ),
         ],
       ),
+
+      /// FAB
+      floatingActionButtonLocation:
+          FloatingActionButtonLocation.centerDocked,
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: const Color(0xFF2F8F83),
+        shape: const CircleBorder(),
+        onPressed: () => context.push('/add'),
+        child: const Icon(Icons.add),
+      ),
+
+      /// BOTTOM NAV
+      bottomNavigationBar: const BottomNavBar(),
     );
   }
 
-  // ---------------- SUMMARY CARD ----------------
+  /// ---------------- WALLET CARD ----------------
+  Widget _walletCard(BuildContext context, WidgetRef ref) {
+    final expenses = ref.watch(expenseListProvider).value ?? [];
+    final incomes = ref.watch(incomeListProvider).value ?? [];
 
-  Widget _summaryCard(
-    BuildContext context,
-    WidgetRef ref, {
-    required double income,
-    required double spent,
-    required double remaining,
-  }) {
+    final totalIncome =
+        incomes.fold<double>(0, (sum, i) => sum + i.amount);
+
+    final totalExpense =
+        expenses.fold<double>(0, (sum, e) => sum + e.amount);
+
+    final remaining = totalIncome - totalExpense;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -131,52 +201,37 @@ class WalletPage extends ConsumerWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.15),
+            color: Colors.black.withOpacity(0.18),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
         ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Wallet Summary',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.edit,
-                    color: Colors.white),
-                onPressed: () =>
-                    _editIncome(context, ref, income),
-              ),
-            ],
+          const Text(
+            'Wallet Summary',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 12),
-
           _summaryRow(
-            label: 'Total Income',
-            value: '₹${income.toStringAsFixed(0)}',
-            color: Colors.white,
+            'Income',
+            '₹${totalIncome.toStringAsFixed(0)}',
           ),
-          const SizedBox(height: 12),
-
+          const SizedBox(height: 8),
           _summaryRow(
-            label: 'Spent',
-            value: '₹${spent.toStringAsFixed(0)}',
+            'Expenses',
+            '₹${totalExpense.toStringAsFixed(0)}',
             color: Colors.redAccent,
           ),
-
           const Divider(color: Colors.white30, height: 32),
-
           _summaryRow(
-            label: 'Remaining',
-            value: '₹${remaining.toStringAsFixed(0)}',
+            'Remaining',
+            '₹${remaining.toStringAsFixed(0)}',
             color: Colors.greenAccent,
           ),
         ],
@@ -184,72 +239,61 @@ class WalletPage extends ConsumerWidget {
     );
   }
 
-  Widget _summaryRow({
-    required String label,
-    required String value,
-    required Color color,
+  Widget _summaryRow(
+    String label,
+    String value, {
+    Color color = Colors.white,
   }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: const TextStyle(
-            color: Colors.white70,
-            fontSize: 14,
-          ),
-        ),
+        Text(label, style: const TextStyle(color: Colors.white70)),
         Text(
           value,
           style: TextStyle(
             color: color,
-            fontSize: 16,
             fontWeight: FontWeight.bold,
           ),
         ),
       ],
     );
   }
+}
 
-  // ---------------- EDIT INCOME DIALOG ----------------
-
-  void _editIncome(
-    BuildContext context,
-    WidgetRef ref,
-    double currentIncome,
-  ) {
-    final ctrl =
-        TextEditingController(text: currentIncome.toString());
-
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Update Income'),
-        content: TextField(
-          controller: ctrl,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(
-            prefixText: '₹ ',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              ref
-                  .read(incomeProvider.notifier)
-                  .updateIncome(
-                    double.parse(ctrl.text),
-                  );
-              Navigator.pop(context);
-            },
-            child: const Text('Save'),
-          ),
-        ],
+/// ---------------- LIST TILE ----------------
+Widget _walletListTile(WalletEntry entry) {
+  return Padding(
+    padding: const EdgeInsets.only(bottom: 12),
+    child: ListTile(
+      contentPadding: EdgeInsets.zero,
+      title: Text(
+        entry.title,
+        style: const TextStyle(fontWeight: FontWeight.w600),
       ),
-    );
+      subtitle: Text(
+        _formatDate(entry.date),
+        style: const TextStyle(fontSize: 12),
+      ),
+      trailing: Text(
+        entry.isIncome
+            ? '+ ₹${entry.amount.toStringAsFixed(0)}'
+            : '- ₹${entry.amount.toStringAsFixed(0)}',
+        style: TextStyle(
+          color: entry.isIncome ? Colors.green : Colors.red,
+          fontWeight: FontWeight.bold,
+          fontSize: 16,
+        ),
+      ),
+    ),
+  );
+}
+
+String _formatDate(DateTime date) {
+  final now = DateTime.now();
+  if (date.year == now.year &&
+      date.month == now.month &&
+      date.day == now.day) {
+    return 'Today';
   }
+  return '${date.day}/${date.month}/${date.year}';
 }

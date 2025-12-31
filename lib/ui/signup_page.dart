@@ -18,7 +18,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
   final confirmCtrl = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
-  bool obscure = true;
+  bool obscurePassword = true;
 
   @override
   Widget build(BuildContext context) {
@@ -72,22 +72,48 @@ class _SignupPageState extends ConsumerState<SignupPage> {
 
                     TextFormField(
                       controller: passCtrl,
-                      obscureText: obscure,
-                      decoration: const InputDecoration(
+                      obscureText: obscurePassword,
+                      decoration: InputDecoration(
                         labelText: 'Password',
                         prefixIcon:
                             Icon(Icons.lock_outline),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            obscurePassword
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              obscurePassword =
+                                  !obscurePassword;
+                            });
+                          },
+                        ),
                       ),
                     ),
                     const SizedBox(height: 16),
 
                     TextFormField(
                       controller: confirmCtrl,
-                      obscureText: obscure,
-                      decoration: const InputDecoration(
+                      obscureText: obscurePassword,
+                      decoration: InputDecoration(
                         labelText: 'Confirm Password',
                         prefixIcon:
                             Icon(Icons.lock_outline),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            obscurePassword
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              obscurePassword =
+                                  !obscurePassword;
+                            });
+                          },
+                        ),
                       ),
                     ),
                     const SizedBox(height: 28),
@@ -111,7 +137,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                                 emailCtrl.text.trim(),
                                 passCtrl.text.trim(),
                               );
-                          context.go('/verify-email');
+                          context.go('/verifyemail');
                         },
                         child:
                             const Text('Create Account'),
